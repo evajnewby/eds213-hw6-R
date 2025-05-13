@@ -1,0 +1,54 @@
+---
+title: "hw6-winners"
+author: "Eva Newby"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+# Load Packages
+library(dplyr)
+library(here)
+library(tidyverse)
+library(DBI)
+library(dbplyr)
+library(duckdb)
+```
+
+```{r}
+# Connect to database
+conn <- DBI::dbConnect(duckdb::duckdb(), dbdir = "C:/MEDS/EDS213-database/bren-eds213-data/database/database.db")
+
+# List tables
+dbListTables(conn)
+
+# Read-in tables
+eggs <- tbl(conn, "Bird_eggs")
+nests <- tbl(conn, "Bird_nests")
+observers <- tbl(conn, "Personnel")
+
+```
+
+```{r}
+# Join Bird_eggs, Bird_nests, Personnel
+top_obs <- eggs %>%
+  inner_join(nests, by = "Nest_ID") %>%
+  inner_join(observers, by = c("Observer" = "Abbreviation")) %>%
+  group_by(Name) %>%
+  summarize(total_eggs = n()) %>%
+  arrange(desc(total_eggs)) %>%
+  head(3)
+
+# See results of SQL query
+top_obs %>% collect()
+
+# Show SQL query
+top_obs %>% show_query()
+
+```
+
+If you used multiple R statements, did dbplyr create a temporary table, or did it manage to do everything in one query? Did it limit to the first three rows using an R expression or an SQL LIMIT clause?
+
+`dbplyr` did not create a temporary table and it did limit the first three rows by "understanding" the `head(3)` in R to be `LIMIT 3` in sql.
